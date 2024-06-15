@@ -4,13 +4,13 @@
 理系统开发周期一个月(每天更新)。 对一个开发人员来说，如果想单纯的做出这些功能，其实并不难。 难的是对于这些功能细节的把控，项目整体的友好程度，用户的体验效果；对并发的考虑，对恶意请求，对流畅度这些细节的考虑等等。
 <h2>前台-小程序端效果展示</h2>
 <p>
-<img src="./gif/img.png">
-<img src="./gif/img_1.png">
-  <img src="./gif/img_2.png">
+<img src=".img.png">
+<img src=".img_1.png">
+  <img src=".img_2.png">
 </p>
 </br>
 <h2>后台管理系统页面展现</h2>
-<img style="width:50%;height:50%"src="./gif/backgroud.png">
+<img style="width:50%;height:50%"src=".backgroud.png">
 <h2>关键字：springboot、分布式、前后分离</h2>
 
 <h2>相关技术 </h2>
