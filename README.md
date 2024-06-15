@@ -10,7 +10,7 @@
 </p>
 </br>
 <h2>后台管理系统页面展现</h2>
-<img style="width:50%;height:50%"src="./backgroud.png">
+<img style="width:50%;height:50%"src="./background.png">
 <h2>关键字：springboot、分布式、前后分离</h2>
 
 <h2>相关技术 </h2>
