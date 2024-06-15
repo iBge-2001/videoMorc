@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>秀视频后台管理平台-用户管理</title>
+    <meta name="keywords" content="秀视频后台管理平台">
+    <meta name="description" content="秀视频后台管理平台欢迎您的到来">
+    <script src="../js/vue.js"></script>
+    <script src="../js/axios-0.18.0.js"></script>
+    <script src="../plugins/elementui/index.js"></script>
+    <script src="../plugins/axios/axios.min.js"></script>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script type="text/javascript" src="../js/jquery1.8.3.min.js"></script>
+    <script src="../js/user/users.js"></script>
+    <script src="../js/request.js"></script>
+</head>
+<body>
+<div id="app">
+    <div id="a1">
+        <h2>~~用户信息~~</h2>
+    </div>
+    <div id="a3">
+    </div>
+    <div >
+                <el-table  border="1" cellspacing="" label-width="10px"  cellpadding="" size="small" current-row-key="id" :data="UserList.slice((currentPage-1)*pageSize,currentPage*pageSize)" stripe highlight-current-row>
+                    <el-table-column prop="id" label="id" align="center" ></el-table-column>
+                    <el-table-column prop="username" label="用户名" align="center" ></el-table-column>
+                    <el-table-column prop="nickname" label="昵称" align="center"></el-table-column>
+                    <el-table-column label="操作" align="center">
+                        <template slot-scope="scope">
+                            <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">修改密码</el-button>
+                            <el-button type="danger" size="mini" @click="handleDelete(scope.row)">删除</el-button>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="状态" align="center">
+                        <template slot-scope="scope">
+                        <el-button v-if="scope.row.status == 1"
+                                   @click="handleClick(scope.row)"
+                                   type="text"
+                                   size="small">封禁账号</el-button>
+                        <el-button v-if="scope.row.status === 0"
+                                   @click="handleClick(scope.row)"
+                                   type="text"
+                                   size="small">启用账号</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div style="text-align:center">
+                    <el-pagination hide-on-single-page background layout="prev, pager, next,total" :total="listLength" :page-size="pageSize" @current-change="current_change"></el-pagination>
+                </div>
+    </div>
+    <div class="add-form">
+        <el-dialog title="编辑检查项" :visible.sync="dialogFormVisible4Edit">
+            <el-form ref="form" :model="form" label-width="50%">
+                <el-form-item label="输入密码">
+                    <el-input  type="password" v-model="form.newPassword" style="width: 60%" ></el-input>
+                </el-form-item>
+                <el-form-item label="再次确认密码" >
+                    <el-input type="password" v-model="form.rePassword" style="width: 60%"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="confirmUpdate">立即修改</el-button>
+                    <el-button @click="dialogFormVisible4Edit = false">取消</el-button>
+                </el-form-item>
+            </el-form>
+        </el-dialog>
+    </div>
+</div>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript">
+    var vue =new Vue({
+        el:"#app",
+        data:{
+            UserList:[],
+            pageSize:12,//指定展示多少条
+            currentPage:1 ,//当前页码
+            dialogFormVisible4Edit:false,
+            form:{}
+        },
+        created(){
+            this.getAllUser();
+            // this.dialogFormVisible4Edit=false;
+        },
+        computed: {
+            listLength: function () {
+                return this.UserList.length
+            }
+        },
+        methods: {
+            current_change(currentPage) {
+                this.currentPage = currentPage;
+            },
+            getAllUser() {
+                axios.get("../../User/all").then((res) => {
+                    console.log(res)
+                        this.UserList = res.data;
+                    console.log(this.UserList)
+                })
+            },
+            handleUpdate(row) {
+                this.form.id = row.id;
+                this.dialogFormVisible4Edit = true;
+            },
+            confirmUpdate(){
+                if (this.form.newPassword===this.form.rePassword){
+                    this.form.password = this.form.rePassword;
+                    axios.put("../../User/update/", this.form).then((res) => {
+                        console.log(this.form);
+                        if (res.data.msg === 'OK') {
+                            this.$message.success("修改成功！！");
+                            this.getAllUser();
+                            this.dialogFormVisible4Edit=false;
+                        }
+                    })
+                } else {
+                    this.$message.error("密码不一致，请检查输入的密码是否相同");
+                }
+            },
+            handleClick (row) {
+                this.Id = row.id
+                this.status = row.status
+                this.$confirm('确认调整该账号的状态?', '提示', {
+                    'confirmButtonText': '确定',
+                    'cancelButtonText': '取消',
+                    'type': 'warning'
+                }).then(() => {
+                    console.log(this.Id)
+                    console.log(this.status)
+                    enableOrDisableUser({ 'id': this.Id, 'status': !this.status ? 1 : 0 }).then(res => {
+                        console.log('enableOrDisableUser',res)
+                        if (res.data.msg === 'OK') {
+                            this.$message.success('账号状态更改成功！')
+                            this.getAllUser();
+                        }
+                    }).catch(err => {
+                        this.$message.error('请求出错了：' + err)
+                    })
+                })
+            },
+            handleDelete(row){
+                this.$confirm("此操作永久删除数据，是否继续？", "提示", {
+                    type: 'info'
+                }).then(() => {
+                    console.log(row.id);
+                    axios.delete("/User/" +row.id).then((res) => {
+                        if (res.data.msg === 'OK') {
+                            //2、做删除业务
+                            this.$message.success("删除成功");
+                        } else {
+                            this.$message.error("删除失败");
+                        }
+                    })
+                }).catch(() => {
+                    //3、取消删除操作
+                    this.$message.info("取消删除操作");
+                }).finally(() => {
+                    this.getAllUser();
+                });
+
+            }
+        }
+    })
+</script>
+</body>
+</body>
+</html>

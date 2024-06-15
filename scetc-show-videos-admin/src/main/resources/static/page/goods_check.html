@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../js/vue.js"></script>
+    <script src="../js/axios-0.18.0.js"></script>
+    <script src="../plugins/elementui/index.js"></script>
+    <script src="../plugins/axios/axios.min.js"></script>
+    <script src="../js/request.js"></script>
+    <script src="../js/goods/goods.js"></script>
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script type="text/javascript" src="../js/jquery1.8.3.min.js"></script>
+    <meta charset="UTF-8">
+    <title>秀视频后台管理平台-商品审核</title>
+</head>
+<body>
+
+<div id="app">
+<el-table  border="1" cellspacing="" label-width="10px"  cellpadding="" size="small" current-row-key="id" :data="GoodsList.slice((currentPage-1)*pageSize,currentPage*pageSize)" stripe highlight-current-row>
+    <el-table-column prop="title" label="标题" align="center"></el-table-column>
+    <el-table-column prop="intro" label="介绍" align="center"></el-table-column>
+    <el-table-column prop="price" label="价格" align="center"></el-table-column>
+    <el-table-column prop="value" label="价值" align="center"></el-table-column>
+    <el-table-column label="图片">
+    <template slot-scope="scope">
+    <el-button @click="showImage(scope.row) ">点击查看图片</el-button>
+    </template>
+    </el-table-column>
+    <el-table-column prop="date" label="上传日期" align="center"></el-table-column>
+    <el-table-column prop="status" label="状态" align="center"></el-table-column>
+    <el-table-column label="审核状态" align="center">
+        <template slot-scope="scope">
+            <el-button v-if="scope.row.isCheck === 0"
+                       @click="handleClick(scope.row)"
+                       type="success"
+                       size="small">审核通过</el-button>
+            <el-button v-if="scope.row.isCheck === 1"
+                       @click="handleClick(scope.row)"
+                       type="danger"
+                       size="small">不通过</el-button>
+          </template>
+    </el-table-column>
+</el-table>
+<div style="text-align:center">
+    <el-pagination hide-on-single-page background layout="prev, pager, next,total" :total="listLength" :page-size="pageSize" @current-change="current_change"></el-pagination>
+</div>
+    <el-dialog
+            title="图片预览"
+            :visible.sync="showImageDialog"
+            :before-close="handleDialogClose"
+           >
+        <el-carousel trigger="click" height="600px">
+            <el-carousel-item v-for="(image, index) in images" :key="index">
+                <img   fit="contain" :src="image" :alt="'Image ' + (index + 1)" style="width:70%; height:600px;display: block; margin: auto;">
+            </el-carousel-item>
+        </el-carousel>
+    </el-dialog>
+
+</div>
+</body>
+<script type="text/javascript">
+    var vue =new Vue({
+        el:"#app",
+        data:{
+            GoodsList:[],
+            pageSize:10,//指定展示多少条
+            currentPage:1 ,//当前页码
+            form:{},
+            showImageDialog:false,
+            images:[],
+        },
+        created(){
+            this.getAllGoods();
+            // this.dialogFormVisible4Edit=false;
+        },
+        computed: {
+            listLength: function () {
+                return this.GoodsList.length
+            }
+        },
+        methods: {
+            current_change(currentPage) {
+                this.currentPage = currentPage;
+            },
+            getAllGoods() {
+                axios.get("../../Goods/all").then((res) => {
+                    console.log(res.data)
+                    res.data.forEach(item => {
+                        if (item.date) { // 确保time字段存在
+                            item.date = this.Format(item.date,"yyyy-MM-dd hh:mm:ss"); // 调用formatTime函数来格式化time字段
+                        }
+                    })
+                    this.GoodsList = res.data;
+                    console.log(this.GoodsList)
+                })
+            },
+            showImage(row){
+                this.showImageDialog = true;
+                this.images = row.images;
+             },
+
+            handleClick(row){
+                this.Id = row.id
+                this.isCheck = row.isCheck
+                this.$confirm('确认调整该商品的审核状态?', '提示', {
+                    'confirmButtonText': '确定',
+                    'cancelButtonText': '取消',
+                    'type': 'warning'
+                }).then(() => {
+                    console.log(this.Id)
+                    console.log(this.isCheck)
+                    enableOrDisableGoods({ 'id': this.Id, 'isCheck': !this.isCheck ? 1 : 0 }).then(res => {
+                        console.log('enableOrDisableUser',res)
+                        if (res.data.msg === 'OK') {
+                            this.$message.success('商品审核状态更改成功！')
+                            this.getAllGoods();
+                        }
+                    }).catch(err => {
+                        this.$message.error('请求出错了：' + err)
+                    })
+                })
+            },
+            handleDelete(row){
+                this.$confirm("此操作永久删除数据，是否继续？", "提示", {
+                    type: 'info'
+                }).then(() => {
+                    console.log(row.id);
+                    axios.delete("/User/" +row.id).then((res) => {
+                        if (res.data.msg === 'OK') {
+                            //2、做删除业务
+                            this.$message.success("删除成功");
+                        } else {
+                            this.$message.error("删除失败");
+                        }
+                    })
+                }).catch(() => {
+                    //3、取消删除操作
+                    this.$message.info("取消删除操作");
+                }).finally(() => {
+                    this.getAllUser();
+                });
+
+            },
+            Format(datetime, fmt) {
+                if (parseInt(datetime) == datetime) {
+                    if (datetime.length == 10) {
+                        datetime = parseInt(datetime) * 1000;
+                    } else if (datetime.length == 13) {
+                        datetime = parseInt(datetime);
+                    }
+                }
+                datetime = new Date(datetime);
+                var o = {
+                    "M+" : datetime.getMonth() + 1, // 月份
+                    "d+" : datetime.getDate(), // 日
+                    "h+" : datetime.getHours(), // 小时
+                    "m+" : datetime.getMinutes(), // 分
+                    "s+" : datetime.getSeconds(), // 秒
+                    "q+" : Math.floor((datetime.getMonth() + 3) / 3), // 季度
+                    "S" : datetime.getMilliseconds() // 毫秒
+                };
+                if (/(y+)/.test(fmt))
+                    fmt = fmt.replace(RegExp.$1, (datetime.getFullYear() + "").substr(4 - RegExp.$1.length));
+                for (var k in o)
+                    if (new RegExp("(" + k + ")").test(fmt))
+                        fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                return fmt;
+            }
+        }
+    })
+</script>
+</html>

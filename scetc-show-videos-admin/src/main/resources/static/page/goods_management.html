@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../js/vue.js"></script>
+    <script src="../js/axios-0.18.0.js"></script>
+    <script src="../plugins/elementui/index.js"></script>
+    <script src="../plugins/axios/axios.min.js"></script>
+    <script src="../js/request.js"></script>
+    <script src="../js/goods/goods.js"></script>
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script type="text/javascript" src="../js/jquery1.8.3.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app">
+    <div id="con">
+        <el-button
+                type="primary"
+                @click="addMemberHandle()"/>
+            + 添加商品
+    </div>
+    <div>
+    <el-table  border="1" cellspacing="" label-width="10px"  cellpadding="" size="small" current-row-key="id" :data="GoodsList.slice((currentPage-1)*pageSize,currentPage*pageSize)" stripe highlight-current-row>
+        <el-table-column prop="title" label="标题" align="center"></el-table-column>
+        <el-table-column prop="intro" label="介绍" align="center"></el-table-column>
+        <el-table-column prop="price" label="价格" align="center"></el-table-column>
+        <el-table-column prop="value" label="价值" align="center"></el-table-column>
+        <el-table-column label="图片">
+            <template slot-scope="scope">
+                <el-button @click="showImage(scope.row) ">点击查看图片</el-button>
+            </template>
+        </el-table-column>
+        <el-table-column prop="date" label="上传日期" align="center"></el-table-column>
+        <el-table-column prop="status" label="状态" align="center"></el-table-column>
+        <el-table-column prop="uid" label="上传者" align="center"></el-table-column>
+        <el-table-column label="操作" align="center" >
+            <template slot-scope="scope">
+                <el-button type="primary" size="mini" @click="addMemberHandle(scope.row)">编辑</el-button>
+                <el-button type="danger" size="mini" @click="handleDelete(scope.row)">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+        <div style="text-align:center">
+            <el-pagination hide-on-single-page background layout="prev, pager, next,total" :total="listLength" :page-size="pageSize" @current-change="current_change"></el-pagination>
+        </div>
+    </div>
+    <el-dialog
+            title="图片预览"
+            :visible.sync="showImageDialog"
+            :before-close="handleDialogClose"
+    >
+        <el-carousel trigger="click" height="600px">
+            <el-carousel-item v-for="(image, index) in images" :key="index">
+                <img   fit="contain" :src="image" :alt="'Image ' + (index + 1)" style="width:70%; height:600px;display: block; margin: auto;">
+            </el-carousel-item>
+        </el-carousel>
+
+    </el-dialog>
+    <div class="add-form">
+        <el-dialog  :visible.sync="dialogFormVisible4">
+            <el-form ref="dataAddForm" :model="formData" label-position="right" label-width="100px">
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="标题" prop="formData.title">
+                            <el-input v-model="formData.title"/>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="介绍" prop="formData.intro">
+                            <el-input v-model="formData.intro"/>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="价格" prop="formData.price">
+                            <el-input v-model="formData.price"/>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="12">
+                        <el-form-item label="价值" prop="formData.value">
+                            <el-input v-model="formData.value"/>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <template>
+                        <el-col :span="12">
+                        <el-upload label="图片"
+                                action="http://localhost:8082/Goods/upload"
+                                list-type="picture-card"
+                                :on-preview="handlePictureCardPreview"
+                                   :on-success="handleAvatarSuccess"
+                                :on-remove="handleRemove"
+                             >
+                            <i class="el-icon-plus"></i>
+                        </el-upload>
+                        <el-dialog :visible.sync="dialogVisible">
+                            <img width="100%" :src="dialogImageUrl" alt="">
+                        </el-dialog>
+                        </el-col>
+                    </template>
+                </el-row>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible4 = false">取消</el-button>
+                <el-button type="primary" @click="handleAdd()">确定</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    var vue =new Vue({
+            el:"#app",
+            data:{
+                GoodsList:[],
+                pageSize:10,//指定展示多少条
+                currentPage:1 ,//当前页码
+                form:{},
+                showImageDialog:false,
+                images:[],
+                formData:{},
+                dialogFormVisible4:false,
+                dialogImageUrl: '',
+                dialogVisible: false,
+                imageList:[]
+            },
+            created(){
+                this.getAllGoods();
+                // this.dialogFormVisible4Edit=false;
+            },
+            computed: {
+                listLength: function () {
+                    return this.GoodsList.length
+                }
+            },
+            methods: {
+                handleAvatarSuccess(res, file,fileList) {
+                    alert(res)
+                    console.log(fileList)
+                     this.imageList.push(res)
+                    console.log(this.imageList)
+                    this.imageUrl = URL.createObjectURL(file.raw);
+                },
+                handleRemove(file, fileList) {
+                    console.log(file, fileList);
+                },
+                handlePictureCardPreview(file) {
+                    this.dialogImageUrl = file.url;
+                    this.dialogVisible = true;
+                },
+                current_change(currentPage) {
+                    this.currentPage = currentPage;
+                },
+                getAllGoods() {
+                    axios.get("../../Goods/all").then((res) => {
+                        console.log(res.data)
+                        res.data.forEach(item => {
+                            if (item.date) { // 确保time字段存在
+                                item.date = this.Format(item.date,"yyyy-MM-dd hh:mm:ss"); // 调用formatTime函数来格式化time字段
+                            }
+                        })
+                        this.GoodsList = res.data;
+                        console.log(this.GoodsList)
+                    })
+                },
+                showImage(row){
+                    this.showImageDialog = true;
+                    this.images = row.images;
+                },
+                addMemberHandle() {
+                    this.dialogFormVisible4 = true;
+                },
+                handleUpdate(row) {
+                    alert(row);
+                    axios.get("../../goods/" + row.id).then((res) => {
+                        this.formData = res.data.data;
+                        this.dialogFormVisible4Edit = true;
+                    })
+                },
+                handleEdit(){
+                    axios.put("../../goods/editGoods", this.formData, {
+                    }).then((res) => {
+                        console.log(res.data);
+                        // //如果操作成功，关闭弹层
+                        // this.dialogFormVisible=false;
+                        // //显示数据
+                        // this.getAll();
+                        if (res.data.status === 200) {
+                            this.dialogFormVisible4Edit = false;
+                            this.$message.success("修改成功");
+                        } else  {
+                            this.$message.error("修改失败");
+                        }
+                    }).finally(() => {
+                        this.init();
+                    });
+
+                },
+                handleAdd(){
+                    let uniqueId = Date.now() + Math.random().toString(36).substr(2, 10);
+                    const params = {...this.formData, id:uniqueId,saleStatus:"待售出",images:this.imageList}
+                    console.log(params)
+                    InsertGoods(params).then((res) => {
+                        console.log(res.data);
+                        if (res.data === '上传成功') {
+                            this.dialogFormVisible4 = false;
+                            this.$message.success("上传成功");
+                        } else {
+                            this.$message.error("上传失败");
+                            this.$message.error(res.data.msg);
+                        }
+                    })
+                },
+                handleDelete(row){
+                    this.$confirm("此操作永久删除数据，是否继续？", "提示", {
+                        type: 'info'
+                    }).then(() => {
+                        console.log(row.id);
+                        axios.delete("/Goods/delete/" +row.id).then((res) => {
+                                //2、做删除业务
+                                this.$message.success("删除成功");
+                                this.getAllGoods()
+                        })
+                    }).catch(() => {
+                        //3、取消删除操作
+                        this.$message.info("取消删除操作");
+                    }).finally(() => {
+                        this.getAllGoods();
+                    });
+
+                },
+                Format(datetime, fmt) {
+                    if (parseInt(datetime) == datetime) {
+                        if (datetime.length == 10) {
+                            datetime = parseInt(datetime) * 1000;
+                        } else if (datetime.length == 13) {
+                            datetime = parseInt(datetime);
+                        }
+                    }
+                    datetime = new Date(datetime);
+                    var o = {
+                        "M+" : datetime.getMonth() + 1, // 月份
+                        "d+" : datetime.getDate(), // 日
+                        "h+" : datetime.getHours(), // 小时
+                        "m+" : datetime.getMinutes(), // 分
+                        "s+" : datetime.getSeconds(), // 秒
+                        "q+" : Math.floor((datetime.getMonth() + 3) / 3), // 季度
+                        "S" : datetime.getMilliseconds() // 毫秒
+                    };
+                    if (/(y+)/.test(fmt))
+                        fmt = fmt.replace(RegExp.$1, (datetime.getFullYear() + "").substr(4 - RegExp.$1.length));
+                    for (var k in o)
+                        if (new RegExp("(" + k + ")").test(fmt))
+                            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                    return fmt;
+                }
+                },
+        })
+</script>
+</html>

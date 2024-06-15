@@ -1,0 +1,317 @@
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>秀视频后台管理平台-短视频数据</title>
+<meta name="keywords" content="秀视频后台管理平台">
+<meta name="description" content="秀视频后台管理平台欢迎您的到来">
+	<script src="../js/vue.js"></script>
+	<script src="../js/axios-0.18.0.js"></script>
+	<script src="../plugins/elementui/index.js"></script>
+	<script src="../plugins/axios/axios.min.js"></script>
+	<link rel="stylesheet" href="../plugins/elementui/index.css">
+	<link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="../css/style.css">
+	<link rel="stylesheet" href="../css/video.css">
+	<script type="text/javascript" src="../js/jquery1.8.3.min.js"></script>
+	<link rel="stylesheet" href="https://g.alicdn.com/de/prismplayer/2.9.7/skins/default/aliplayer-min.css" />
+	<script charset="utf-8" type="text/javascript" src="https://g.alicdn.com/de/prismplayer/2.9.7/aliplayer-min.js"></script>
+<style>
+.news_infos span {
+	font-size: 13px;
+}
+</style>
+</head>
+<script src="../js/vue.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../js/jquery1.8.3.min.js"></script>
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<body >
+	<div id="a2">
+			<div class="ibox-title">
+				<h5>短视频管理表格</h5>
+			</div>
+		<el-dialog :visible.sync="dialogVisible"
+				   :close-on-click-modal="false"
+				   :destroy-on-close="true"
+				   @close="onCloseDialog"
+				   style="text-align: center;  ">
+			<video controls ref="videoPlayer" :src="playauth"  type="video/mp4" style="max-height: 500px;max-width: 750px;margin-right: 70px;">
+			</video>
+		</el-dialog>
+		<div id="f1">
+			<input type="search" v-model="title" oninput="init()" id="s1" placeholder="请输入查询信息"/>
+			<el-button @click="init()" id="submit">搜索</el-button>
+		</div>
+			<div  >
+				<select v-model="keyword" @change="init()" style="position: absolute;right:0">
+					<option  value="全部" selected disabled>请选择</option>
+					<option v-for="value in categories" :value="value">{{value}}</option>
+				</select>
+			</div>
+			<el-table style="top: 40px;margin-bottom: 50px;" border="1" cellspacing=""  label-width="10px" cellpadding="" size="small" current-row-key="id" :data="pros"
+					  stripe highlight-current-row>
+				<el-table-column prop="id" label="视频id" align="center"></el-table-column>
+				<el-table-column prop="name" label="类别" align="center"></el-table-column>
+				<el-table-column  label="封面" align="center" >
+					<template slot-scope="scope">
+						<el-image fit="cover" style="width: 100px; height: 100px" :src="scope.row.coverPath"></el-image>
+					</template>
+				</el-table-column>
+				<el-table-column prop="nickName" label="发布者" align="center"></el-table-column>
+				<el-table-column prop="likeCounts" label="点赞量" align="center"></el-table-column>
+				<el-table-column prop="videoDesc" label="内容" align="center" show-overflow-tooltip></el-table-column>
+				<el-table-column prop="videoSeconds" label="视频长度" align="center"></el-table-column>
+				<el-table-column prop="viewNum" label="浏览量" align="center"></el-table-column>
+				<el-table-column prop="status" label="状态" align="center"><template slot-scope="scope">
+					<span v-if="scope.row.status==1">已上传</span>
+					<span v-if="scope.row.status==0">待审核</span>
+				</template>
+					</el-table-column>
+				<el-table-column prop="createTime" label="发布时间" align="center"></el-table-column>
+				<el-table-column label="操作" align="center" >
+					<template slot-scope="scope">
+						<el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+						<el-button type="danger" size="mini" @click="handleDelete(scope.row)" style="margin-left: 0px; border-right-width: 0px;">删除</el-button>
+						<el-button type="primary" size="mini" @click="video(scope.row.videoPath)">查看视频</el-button>
+					</template>
+				</el-table-column>
+			</el-table>
+		<el-pagination
+				class="pageList"
+				:page-sizes="[10, 20, 30, 40]"
+				:page-size="pageSize"
+				layout="total, sizes, prev, pager, next, jumper"
+				:total="counts"
+				@size-change="handleSizeChange"
+				@current-change="handleCurrentChange"
+		></el-pagination>
+		<div class="add-form">
+			<el-dialog title="编辑检查项" :visible.sync="dialogFormVisible4Edit">
+				<el-form ref="dataAddForm" :model="formData" label-position="right" label-width="100px">
+					<el-row>
+						<el-col :span="12">
+							<el-form-item label="类别">
+								<el-select style="width: 300px" v-model="formData.video_category" placeholder="请选择已存在的类别">
+									<el-option v-for="value in categories" :value="value">{{value}}</el-option>
+								</el-select>
+							</el-form-item>
+						</el-col>
+					</el-row>
+					<el-row>
+						<el-col :span="12">
+							<el-form-item label="封面">
+									<img v-if="formData.coverPath" :src="formData.coverPath" style="max-width: 200px; height: 300px;">
+							</el-form-item>
+						</el-col>
+					</el-row>
+					<el-row>
+						<el-col :span="12">
+							<el-form-item label="内容" prop="video_desc">
+								<el-input v-model="formData.videoDesc"/>
+							</el-form-item>
+						</el-col>
+					</el-row>
+				</el-form>
+				<div slot="footer" class="dialog-footer">
+					<el-button @click="dialogFormVisible4Edit = false">取消</el-button>
+					<el-button type="primary" @click="handleEdit()">确定</el-button>
+				</div>
+			</el-dialog>
+		</div>
+		</div>
+	<script src="../plugins/elementui/index.js"></script>
+	<script>
+		var vue = new Vue({
+			el: '#a2',
+			data: {
+				url:"http://localhost:8082//",
+				keyword:"",
+				title:"",
+				formData: {},
+				categories: [],
+				pros: [],//表格绑定的数据
+				dialogFormVisible: false,
+				dialogFormVisible4Edit: false,
+				dialogVisible:false,
+				page: 1,
+				pageSize: 10,
+				counts: 0,
+				width: '800px',
+				height: '450px',
+				qualitySort: 'asc', // 清晰度排序
+				mediaType: 'video', // 返回音频还是视频
+				autoplay: true, // 自动播放
+				isLive: false, // 直播
+				rePlay: false, // 循环播
+				preload: true,
+				controlBarVisibility: 'hover', // 控制条的显示方式：鼠标悬停
+				useH5Prism: true, // 播放器类型：html5
+				playerVisible:"",
+				playauth:"",
+			},
+			created() {
+				this.getCategories();
+				this.init();
+			},
+			mounted(){
+
+			},
+			computed: {
+				listLength: function () {
+					return this.pros.rows.length
+				}
+			},
+			methods: {
+				handleSizeChange (val) {
+					this.pageSize = val
+					this.init ()
+				},
+				handleCurrentChange (val) {
+					this.page = val
+					this.init ()
+				},
+				async init () {
+					if(this.keyword =='全部'){
+						this.keyword = ''
+					}
+					const params =  {
+						page: this.page,
+						pageSize:this.pageSize,
+						keyword:this.keyword,
+						title:this.title,
+					};
+					return axios({
+						url: "../../video/queryAll",
+						method: 'GET',
+						params: params
+					}).then(res => {
+						console.log(res)
+							res.data.data.rows.forEach(item => {
+								if (item.createTime) { // 确保time字段存在
+									item.createTime = this.Format(item.createTime,"yyyy-MM-dd hh:mm:ss"); // 调用formatTime函数来格式化time字段
+								}
+							})
+							this.pros = res.data.data.rows
+							this.counts = Number(res.data.data.records)
+							console.log(this.counts)
+							// this.keyword=null
+							// this.title=null
+					}).catch(err => {
+						this.$message.error('请求出错了：' + err)
+					})
+				},
+				video(row){
+					console.log(row)
+					this.dialogVisible=true;
+					this.playauth=this.url+ row;
+					this.playerVisible=true;
+					console.log(this.playauth)
+				},
+				getCategories() {
+					axios.get("../../category/queryCategory" ).then((res) => {
+						console.log(res.data);
+						const allOption = "全部";
+						this.categories = [allOption, ...res.data.data];
+					})
+				},
+				onCloseDialog() {
+					const videoPlayer = this.$refs.videoPlayer;
+					videoPlayer.currentTime = videoPlayer.duration; // 将当前时间设置为视频总时长
+					this.playauth = ''; // 清除视频源
+				},
+				handleUpdate(row) {
+					alert(row);
+					axios.get("../../video/" + row.id).then((res) => {
+							this.formData = res.data.data;
+							this.dialogFormVisible4Edit = true;
+					})
+				},
+				handleEdit(){
+					axios.put("../../video/editVideos", this.formData, {
+					}).then((res) => {
+						console.log(res.data);
+						// //如果操作成功，关闭弹层
+						// this.dialogFormVisible=false;
+						// //显示数据
+						// this.getAll();
+						if (res.data.status === 200) {
+							this.dialogFormVisible4Edit = false;
+							this.$message.success("修改成功");
+						} else  {
+							this.$message.error("修改失败");
+						}
+					}).finally(() => {
+						this.init();
+					});
+
+				},
+				handleDelete(row){
+					this.$confirm("此操作永久删除数据，是否继续？", "提示", {
+						type: 'info'
+					}).then(() => {
+						console.log(row.id);
+						axios.delete("/video/delete/" +row.id).then((res) => {
+							//2、做删除业务
+							this.$message.success("删除成功");
+							this.init ()
+						})
+					}).catch(() => {
+						//3、取消删除操作
+						this.$message.info("取消删除操作");
+					}).finally(() => {
+						this.init ();
+					});
+
+				},
+				Format(datetime, fmt) {
+						if (parseInt(datetime) == datetime) {
+						if (datetime.length == 10) {
+							datetime = parseInt(datetime) * 1000;
+						} else if (datetime.length == 13) {
+							datetime = parseInt(datetime);
+						}
+			}
+			datetime = new Date(datetime);
+			var o = {
+				"M+" : datetime.getMonth() + 1, // 月份
+				"d+" : datetime.getDate(), // 日
+				"h+" : datetime.getHours(), // 小时
+				"m+" : datetime.getMinutes(), // 分
+				"s+" : datetime.getSeconds(), // 秒
+				"q+" : Math.floor((datetime.getMonth() + 3) / 3), // 季度
+				"S" : datetime.getMilliseconds() // 毫秒
+			};
+			if (/(y+)/.test(fmt))
+				fmt = fmt.replace(RegExp.$1, (datetime.getFullYear() + "").substr(4 - RegExp.$1.length));
+			for (var k in o)
+				if (new RegExp("(" + k + ")").test(fmt))
+					fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+			return fmt;
+		}
+			}
+		})
+	</script>
+	<!-- 全局js -->
+<!--	<script src="../js/jquery.min.js"></script>-->
+<!--	<script src="../js/highlight.pack.js"></script>-->
+	<script>
+		// hljs.initHighlightingOnLoad();
+	</script>
+<!--	<script src="../js/bootstrap.min.js"></script>-->
+
+	<!-- 自定义js -->
+<!--	<script src="../js/plugins/sweetalert/sweetalert.min.js"></script>-->
+<!--	<script src="../js/contabs.js"></script>-->
+<!--	<script src="../js/fakeLoader.min.js"></script>-->
+	<!-- Bootstrap table -->
+<!--	<script src="../js/plugins/bootstrap-table/bootstrap-table.min.js"></script>-->
+<!--	<script-->
+<!--		src="../js/plugins/bootstrap-table/bootstrap-table-mobile.min.js"></script>-->
+<!--	<script-->
+<!--		src="../js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js"></script>-->
+<!--	<script src="../js/video/videoTable.js"></script>-->
+
+</body>
+</html>

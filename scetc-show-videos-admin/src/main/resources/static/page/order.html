@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../js/vue.js"></script>
+    <script src="../js/axios-0.18.0.js"></script>
+    <script src="../plugins/elementui/index.js"></script>
+    <script src="../plugins/axios/axios.min.js"></script>
+    <script src="../js/request.js"></script>
+    <script src="../js/goods/goods.js"></script>
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script type="text/javascript" src="../js/jquery1.8.3.min.js"></script>
+    <meta charset="UTF-8">
+    <title>秀视频后台管理平台-订单管理</title>
+</head>
+<body>
+
+<div id="app">
+    <el-table  border="1" cellspacing="" label-width="10px"  cellpadding="" size="small" current-row-key="id" :data="OrdersList.slice((currentPage-1)*pageSize,currentPage*pageSize)" stripe highlight-current-row>
+        <el-table-column prop="id" label="id" align="center"></el-table-column>
+        <el-table-column prop="goodId" label="商品id" align="center"></el-table-column>
+        <el-table-column prop="user_id" label="用户id" align="center"></el-table-column>
+        <el-table-column prop="name" label="姓名" align="center"></el-table-column>
+        <el-table-column prop="address" label="地址" align="center"></el-table-column>
+        <el-table-column prop="telephone" label="联系方式" align="center"></el-table-column>
+        <el-table-column prop="createTime" label="上传日期" align="center"></el-table-column>
+        <el-table-column prop="status" label="状态" align="center"></el-table-column>
+    </el-table>
+    <div style="text-align:center">
+        <el-pagination hide-on-single-page background layout="prev, pager, next,total" :total="listLength" :page-size="pageSize" @current-change="current_change"></el-pagination>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    var vue =new Vue({
+        el:"#app",
+        data:{
+            OrdersList:[],
+            pageSize:10,//指定展示多少条
+            currentPage:1 ,//当前页码
+            form:{},
+            showImageDialog:false,
+            images:[],
+        },
+        created(){
+            this.getAllGoods();
+            // this.dialogFormVisible4Edit=false;
+        },
+        computed: {
+            listLength: function () {
+                return this.OrdersList.length
+            }
+        },
+        methods: {
+            current_change(currentPage) {
+                this.currentPage = currentPage;
+            },
+            getAllGoods() {
+                axios.get("../../Goods/getOrder").then((res) => {
+                    console.log(res.data)
+                    res.data.forEach(item => {
+                        if (item.createTime) { // 确保time字段存在
+                            item.createTime = this.Format(item.createTime,"yyyy-MM-dd hh:mm:ss"); // 调用formatTime函数来格式化time字段
+                        }
+                    })
+                    this.OrdersList = res.data;
+                    console.log(this.OrdersList)
+                })
+            },
+            showImage(row){
+                this.showImageDialog = true;
+                this.images = row.imgs;
+            },
+            handleDelete(row){
+                this.$confirm("此操作永久删除数据，是否继续？", "提示", {
+                    type: 'info'
+                }).then(() => {
+                    console.log(row.id);
+                    axios.delete("/Goods/delete/" +row.id).then((res) => {
+                        if (res.data.msg === 'OK') {
+                            //2、做删除业务
+                            this.$message.success("删除成功");
+                        } else {
+                            this.$message.error("删除失败");
+                        }
+                    })
+                }).catch(() => {
+                    //3、取消删除操作
+                    this.$message.info("取消删除操作");
+                }).finally(() => {
+                    this.getAllUser();
+                });
+
+            },
+            Format(datetime, fmt) {
+                if (parseInt(datetime) == datetime) {
+                    if (datetime.length == 10) {
+                        datetime = parseInt(datetime) * 1000;
+                    } else if (datetime.length == 13) {
+                        datetime = parseInt(datetime);
+                    }
+                }
+                datetime = new Date(datetime);
+                var o = {
+                    "M+" : datetime.getMonth() + 1, // 月份
+                    "d+" : datetime.getDate(), // 日
+                    "h+" : datetime.getHours(), // 小时
+                    "m+" : datetime.getMinutes(), // 分
+                    "s+" : datetime.getSeconds(), // 秒
+                    "q+" : Math.floor((datetime.getMonth() + 3) / 3), // 季度
+                    "S" : datetime.getMilliseconds() // 毫秒
+                };
+                if (/(y+)/.test(fmt))
+                    fmt = fmt.replace(RegExp.$1, (datetime.getFullYear() + "").substr(4 - RegExp.$1.length));
+                for (var k in o)
+                    if (new RegExp("(" + k + ")").test(fmt))
+                        fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                return fmt;
+            }
+        }
+    })
+</script>
+</html>
